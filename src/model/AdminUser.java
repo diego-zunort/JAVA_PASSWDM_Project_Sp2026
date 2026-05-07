@@ -1,4 +1,6 @@
 package model;
+import java.sql.Statement;
+import java.sql.SQLException;
 
 public class AdminUser extends User {
 
@@ -13,5 +15,6 @@ public class AdminUser extends User {
 
     public void resetUserPassword(String targetUsername, String newPassword) {
         // TODO: update target user's password in DB
+        //jdbc:sqlite:passwdm.updateDatabase("UPDATE user SET masterPassword = 'newPassword' WHERE username = 'targetUsername");
     }
 }

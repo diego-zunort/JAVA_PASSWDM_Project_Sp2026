@@ -14,15 +14,18 @@ public class Vault {
 
     public void addEntry(PasswordEntry entry) {
         // TODO: persist to DB
+
         entries.add(entry);
     }
 
     public void removeEntry(int id) {
         // TODO: remove by id from list and DB
+
     }
 
     public ArrayList<PasswordEntry> searchEntries(String keyword) {
         // TODO: filter entries where siteName or username contains keyword
+        
         return new ArrayList<>();
     }
 
