@@ -2,6 +2,7 @@ package model;
 
 public class PasswordEntry {
 
+    private int id;
     private String siteName;
     private String username;
     private String password;
@@ -14,6 +15,8 @@ public class PasswordEntry {
         this.category = category;
     }
 
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
     public String getSiteName() { return siteName; }
     public String getUsername() { return username; }
     public String getCategory() { return category; }

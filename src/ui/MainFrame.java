@@ -1,14 +1,19 @@
 package ui;
 
+import database.DatabaseManager;
+import model.PasswordEntry;
 import model.StandardUser;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.sql.SQLException;
+import java.util.List;
 
 public class MainFrame extends JFrame {
 
-    private StandardUser currentUser;
+    private final StandardUser currentUser;
+    private final DatabaseManager db;
     private JTable vaultTable;
     private DefaultTableModel tableModel;
 
@@ -18,21 +23,25 @@ public class MainFrame extends JFrame {
     private JButton removeButton;
     private JButton viewButton;
 
-    public MainFrame(StandardUser user) {
+    public MainFrame(StandardUser user, DatabaseManager db) {
         this.currentUser = user;
+        this.db = db;
         setTitle("Password Manager");
         setSize(600, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         buildUI();
+        refreshTable();
     }
 
     private void buildUI() {
-        String[] columns = {"Username", "Site", "Password"};
-        tableModel = new DefaultTableModel(columns, 0);
+        String[] columns = {"Site", "Username", "Category"};
+        tableModel = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
         vaultTable = new JTable(tableModel);
 
-        JLabel userLabel = new JLabel(currentUser.getUsername(), SwingConstants.RIGHT);
+        JLabel userLabel = new JLabel("Logged in as: " + currentUser.getUsername(), SwingConstants.RIGHT);
 
         JPanel buttonPanel = new JPanel();
         generateButton = new JButton("Generate");
@@ -52,13 +61,30 @@ public class MainFrame extends JFrame {
         add(buttonPanel, BorderLayout.SOUTH);
 
         generateButton.addActionListener(e -> new GeneratePasswordDialog(this).setVisible(true));
-        addButton.addActionListener(e -> new AddPasswordDialog(this, currentUser).setVisible(true));
-        modifyButton.addActionListener(e -> new ModifyPasswordDialog(this, currentUser).setVisible(true));
-        removeButton.addActionListener(e -> new RemovePasswordDialog(this, currentUser).setVisible(true));
-        viewButton.addActionListener(e -> new ViewPasswordDialog(this, currentUser).setVisible(true));
+        addButton.addActionListener(e -> new AddPasswordDialog(this, currentUser, db).setVisible(true));
+        modifyButton.addActionListener(e -> new ModifyPasswordDialog(this, currentUser, db).setVisible(true));
+        removeButton.addActionListener(e -> new RemovePasswordDialog(this, currentUser, db).setVisible(true));
+        viewButton.addActionListener(e -> new ViewPasswordDialog(this, currentUser, db).setVisible(true));
     }
 
     public void refreshTable() {
-        // TODO: reload entries from vault/DB and repopulate tableModel
+        tableModel.setRowCount(0);
+        try {
+            List<PasswordEntry> entries = db.getEntriesForUser(currentUser.getUsername());
+            currentUser.getVault().getEntries().clear();
+            for (PasswordEntry entry : entries) {
+                currentUser.getVault().getEntries().add(entry);
+                tableModel.addRow(new Object[]{
+                    entry.getSiteName(),
+                    entry.getUsername(),
+                    entry.getCategory()
+                });
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Failed to load entries.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
+
+    public StandardUser getCurrentUser() { return currentUser; }
+    public DatabaseManager getDb() { return db; }
 }

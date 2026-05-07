@@ -1,5 +1,6 @@
 package ui;
 
+import database.DatabaseManager;
 import model.StandardUser;
 
 import javax.swing.*;
@@ -9,15 +10,17 @@ public class ViewPasswordDialog extends JDialog {
 
     private StandardUser currentUser;
     private MainFrame parentFrame;
+    private final DatabaseManager db;
 
     private JComboBox<String> accountDropdown;
     private JPasswordField securityPinField;
     private JButton viewButton;
 
-    public ViewPasswordDialog(MainFrame parent, StandardUser user) {
+    public ViewPasswordDialog(MainFrame parent, StandardUser user, DatabaseManager db) {
         super(parent, "View Password", true);
         this.parentFrame = parent;
         this.currentUser = user;
+        this.db = db;
         setSize(300, 150);
         setLocationRelativeTo(parent);
         buildUI();

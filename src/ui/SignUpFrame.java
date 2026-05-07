@@ -1,5 +1,7 @@
 package ui;
 
+import database.DatabaseManager;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -11,9 +13,12 @@ public class SignUpFrame extends JFrame {
     private JPasswordField securityPinField;
     private JButton createAccountButton;
 
-    public SignUpFrame() {
+    private final DatabaseManager db;
+
+    public SignUpFrame(DatabaseManager db) {
+        this.db = db;
         setTitle("Sign Up");
-        setSize(320, 200);
+        setSize(320, 220);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         buildUI();
@@ -45,10 +50,32 @@ public class SignUpFrame extends JFrame {
     }
 
     private void handleCreateAccount() {
-        String username = usernameField.getText();
+        String username = usernameField.getText().trim();
         String password = new String(passwordField.getPassword());
         String retypePassword = new String(retypePasswordField.getPassword());
         String securityPin = new String(securityPinField.getPassword());
-        // TODO: validate fields match, save to DB, then open LoginFrame
+
+        if (username.isEmpty() || password.isEmpty() || securityPin.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "All fields are required.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!password.equals(retypePassword)) {
+            JOptionPane.showMessageDialog(this, "Passwords do not match.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (db.userExists(username)) {
+            JOptionPane.showMessageDialog(this, "Username already taken.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!db.addUser(username, password, securityPin)) {
+            JOptionPane.showMessageDialog(this, "Failed to create account. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(this, "Account created! You can now log in.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        dispose();
     }
 }

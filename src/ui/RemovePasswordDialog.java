@@ -1,5 +1,6 @@
 package ui;
 
+import database.DatabaseManager;
 import model.StandardUser;
 
 import javax.swing.*;
@@ -9,15 +10,17 @@ public class RemovePasswordDialog extends JDialog {
 
     private StandardUser currentUser;
     private MainFrame parentFrame;
+    private final DatabaseManager db;
 
     private JComboBox<String> accountDropdown;
     private JPasswordField currentPasswordField;
     private JButton removeButton;
 
-    public RemovePasswordDialog(MainFrame parent, StandardUser user) {
+    public RemovePasswordDialog(MainFrame parent, StandardUser user, DatabaseManager db) {
         super(parent, "Remove Password", true);
         this.parentFrame = parent;
         this.currentUser = user;
+        this.db = db;
         setSize(300, 150);
         setLocationRelativeTo(parent);
         buildUI();

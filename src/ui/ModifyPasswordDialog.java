@@ -1,5 +1,6 @@
 package ui;
 
+import database.DatabaseManager;
 import model.StandardUser;
 
 import javax.swing.*;
@@ -9,16 +10,18 @@ public class ModifyPasswordDialog extends JDialog {
 
     private StandardUser currentUser;
     private MainFrame parentFrame;
+    private final DatabaseManager db;
 
     private JComboBox<String> accountDropdown;
     private JPasswordField currentPasswordField;
     private JPasswordField newPasswordField;
     private JButton modifyButton;
 
-    public ModifyPasswordDialog(MainFrame parent, StandardUser user) {
+    public ModifyPasswordDialog(MainFrame parent, StandardUser user, DatabaseManager db) {
         super(parent, "Modify Password", true);
         this.parentFrame = parent;
         this.currentUser = user;
+        this.db = db;
         setSize(300, 180);
         setLocationRelativeTo(parent);
         buildUI();

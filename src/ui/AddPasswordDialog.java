@@ -1,5 +1,6 @@
 package ui;
 
+import database.DatabaseManager;
 import model.StandardUser;
 import model.PasswordEntry;
 
@@ -10,16 +11,18 @@ public class AddPasswordDialog extends JDialog {
 
     private StandardUser currentUser;
     private MainFrame parentFrame;
+    private final DatabaseManager db;
 
     private JTextField siteField;
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JButton addButton;
 
-    public AddPasswordDialog(MainFrame parent, StandardUser user) {
+    public AddPasswordDialog(MainFrame parent, StandardUser user, DatabaseManager db) {
         super(parent, "Add Password", true);
         this.parentFrame = parent;
         this.currentUser = user;
+        this.db = db;
         setSize(300, 180);
         setLocationRelativeTo(parent);
         buildUI();
