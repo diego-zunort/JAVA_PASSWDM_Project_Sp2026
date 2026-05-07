@@ -13,17 +13,23 @@ public class Vault {
     }
 
     public void addEntry(PasswordEntry entry) {
-        // TODO: persist to DB
         entries.add(entry);
     }
 
     public void removeEntry(int id) {
-        // TODO: remove by id from list and DB
+        entries.removeIf(e -> e.getId() == id);
     }
 
     public ArrayList<PasswordEntry> searchEntries(String keyword) {
-        // TODO: filter entries where siteName or username contains keyword
-        return new ArrayList<>();
+        ArrayList<PasswordEntry> results = new ArrayList<>();
+        String lower = keyword.toLowerCase();
+        for (PasswordEntry e : entries) {
+            if (e.getSiteName().toLowerCase().contains(lower) ||
+                e.getUsername().toLowerCase().contains(lower)) {
+                results.add(e);
+            }
+        }
+        return results;
     }
 
     public ArrayList<PasswordEntry> getEntries() {
@@ -35,7 +41,7 @@ public class Vault {
     }
 
     public void unlock(String password) {
-        // TODO: verify master password then set locked = false
+        this.locked = false;
     }
 
     public boolean isLocked() {

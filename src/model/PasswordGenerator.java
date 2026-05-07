@@ -1,10 +1,34 @@
 package model;
 
+import java.security.SecureRandom;
+
 public class PasswordGenerator {
 
+    private static final String LOWERCASE  = "abcdefghijklmnopqrstuvwxyz";
+    private static final String UPPERCASE  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String DIGITS     = "0123456789";
+    private static final String PUNCTUATION = "!@#$%&*()_+-=[]|,./?><";
+    private static final SecureRandom RNG  = new SecureRandom();
+
+    private static char pick(String s) {
+        return s.charAt(RNG.nextInt(s.length()));
+    }
+
     public String generate(int length) {
-        // TODO: generate random password of given length
-        return "";
+        char[] pw = new char[length];
+        pw[0] = pick(UPPERCASE);
+        pw[1] = pick(LOWERCASE);
+        pw[2] = pick(DIGITS);
+        pw[3] = pick(PUNCTUATION);
+
+        String all = UPPERCASE + LOWERCASE + DIGITS + PUNCTUATION;
+        for (int i = 4; i < length; i++) pw[i] = pick(all);
+
+        for (int i = pw.length - 1; i > 0; i--) {
+            int j = RNG.nextInt(i + 1);
+            char tmp = pw[i]; pw[i] = pw[j]; pw[j] = tmp;
+        }
+        return new String(pw);
     }
 
     public String checkStrength(String password) {

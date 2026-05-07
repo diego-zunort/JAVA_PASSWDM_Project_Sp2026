@@ -1,6 +1,7 @@
 package ui;
 
 import database.DatabaseManager;
+import model.AdminUser;
 import model.StandardUser;
 
 import javax.swing.*;
@@ -59,7 +60,10 @@ public class LoginFrame extends JFrame {
             return;
         }
 
-        StandardUser user = new StandardUser(username, password);
+        String role = db.getUserRole(username);
+        StandardUser user = role.equals("admin")
+            ? new AdminUser(username, password)
+            : new StandardUser(username, password);
         new MainFrame(user, db).setVisible(true);
         dispose();
     }

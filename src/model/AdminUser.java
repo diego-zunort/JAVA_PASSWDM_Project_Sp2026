@@ -1,6 +1,8 @@
 package model;
 
-public class AdminUser extends User {
+import database.DatabaseManager;
+
+public class AdminUser extends StandardUser {
 
     public AdminUser(String username, String masterPassword) {
         super(username, masterPassword);
@@ -11,7 +13,8 @@ public class AdminUser extends User {
         return true;
     }
 
-    public void resetUserPassword(String targetUsername, String newPassword) {
-        // TODO: update target user's password in DB
+    public boolean resetUserPassword(String targetUsername, String newPassword, DatabaseManager db) {
+        if (!db.userExists(targetUsername)) return false;
+        return db.updateUserPassword(targetUsername, newPassword);
     }
 }

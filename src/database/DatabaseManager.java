@@ -31,7 +31,8 @@ public class DatabaseManager {
             "  id                   INTEGER PRIMARY KEY AUTOINCREMENT," +
             "  username             TEXT UNIQUE NOT NULL," +
             "  master_password_hash TEXT NOT NULL," +
-            "  security_pin_hash    TEXT NOT NULL" +
+            "  security_pin_hash    TEXT NOT NULL," +
+            "  role                 TEXT NOT NULL DEFAULT 'standard'" +
             ")";
         String createEntries =
             "CREATE TABLE IF NOT EXISTS password_entries (" +
@@ -48,10 +49,22 @@ public class DatabaseManager {
             stmt.execute(createUsers);
             stmt.execute(createEntries);
         }
+        seedAdmin();
+    }
+
+    private void seedAdmin() throws SQLException {
+        if (userExists("admin")) return;
+        String sql = "INSERT INTO users (username, master_password_hash, security_pin_hash, role) VALUES (?, ?, ?, 'admin')";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, "admin");
+            pstmt.setString(2, hash("Admin@1234"));
+            pstmt.setString(3, hash("0000"));
+            pstmt.executeUpdate();
+        }
     }
 
     public boolean addUser(String username, String masterPassword, String securityPin) {
-        String sql = "INSERT INTO users (username, master_password_hash, security_pin_hash) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO users (username, master_password_hash, security_pin_hash, role) VALUES (?, ?, ?, 'standard')";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
             pstmt.setString(2, hash(masterPassword));
@@ -61,6 +74,18 @@ public class DatabaseManager {
         } catch (SQLException e) {
             return false;
         }
+    }
+
+    public String getUserRole(String username) {
+        String sql = "SELECT role FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) return rs.getString("role");
+        } catch (SQLException e) {
+            // fall through
+        }
+        return "standard";
     }
 
     public boolean userExists(String username) {
@@ -97,6 +122,53 @@ public class DatabaseManager {
                 return rs.getString("security_pin_hash").equals(hash(pin));
             }
             return false;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    public List<String[]> getAllUsers() {
+        String sql = "SELECT username, role FROM users ORDER BY username";
+        List<String[]> users = new ArrayList<>();
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                users.add(new String[]{ rs.getString("username"), rs.getString("role") });
+            }
+        } catch (SQLException e) {
+            // return empty list
+        }
+        return users;
+    }
+
+    public boolean deleteUser(String username) {
+        String deleteEntries = "DELETE FROM password_entries WHERE username = ?";
+        String deleteUser    = "DELETE FROM users WHERE username = ?";
+        try {
+            connection.setAutoCommit(false);
+            try (PreparedStatement p1 = connection.prepareStatement(deleteEntries);
+                 PreparedStatement p2 = connection.prepareStatement(deleteUser)) {
+                p1.setString(1, username);
+                p1.executeUpdate();
+                p2.setString(1, username);
+                p2.executeUpdate();
+            }
+            connection.commit();
+            return true;
+        } catch (SQLException e) {
+            try { connection.rollback(); } catch (SQLException ignored) {}
+            return false;
+        } finally {
+            try { connection.setAutoCommit(true); } catch (SQLException ignored) {}
+        }
+    }
+
+    public boolean updateUserPassword(String username, String newPassword) {
+        String sql = "UPDATE users SET master_password_hash = ? WHERE username = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, hash(newPassword));
+            pstmt.setString(2, username);
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             return false;
         }

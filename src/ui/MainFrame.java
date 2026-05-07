@@ -1,6 +1,7 @@
 package ui;
 
 import database.DatabaseManager;
+import model.AdminUser;
 import model.PasswordEntry;
 import model.StandardUser;
 
@@ -22,6 +23,7 @@ public class MainFrame extends JFrame {
     private JButton modifyButton;
     private JButton removeButton;
     private JButton viewButton;
+    private JButton logoutButton;
 
     public MainFrame(StandardUser user, DatabaseManager db) {
         this.currentUser = user;
@@ -41,7 +43,11 @@ public class MainFrame extends JFrame {
         };
         vaultTable = new JTable(tableModel);
 
-        JLabel userLabel = new JLabel("Logged in as: " + currentUser.getUsername(), SwingConstants.RIGHT);
+        JLabel userLabel = new JLabel("Logged in as: " + currentUser.getUsername(), SwingConstants.LEFT);
+        logoutButton = new JButton("Log Out");
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.add(userLabel, BorderLayout.WEST);
+        topPanel.add(logoutButton, BorderLayout.EAST);
 
         JPanel buttonPanel = new JPanel();
         generateButton = new JButton("Generate");
@@ -56,7 +62,7 @@ public class MainFrame extends JFrame {
         buttonPanel.add(removeButton);
         buttonPanel.add(viewButton);
 
-        add(userLabel, BorderLayout.NORTH);
+        add(topPanel, BorderLayout.NORTH);
         add(new JScrollPane(vaultTable), BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
 
@@ -65,6 +71,14 @@ public class MainFrame extends JFrame {
         modifyButton.addActionListener(e -> new ModifyPasswordDialog(this, currentUser, db).setVisible(true));
         removeButton.addActionListener(e -> new RemovePasswordDialog(this, currentUser, db).setVisible(true));
         viewButton.addActionListener(e -> new ViewPasswordDialog(this, currentUser, db).setVisible(true));
+        logoutButton.addActionListener(e -> handleLogout());
+
+        if (currentUser instanceof AdminUser) {
+            JButton adminButton = new JButton("Admin Panel");
+            buttonPanel.add(adminButton);
+            adminButton.addActionListener(e ->
+                new AdminPanelDialog(this, (AdminUser) currentUser, db).setVisible(true));
+        }
     }
 
     public void refreshTable() {
@@ -83,6 +97,11 @@ public class MainFrame extends JFrame {
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Failed to load entries.", "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void handleLogout() {
+        new LoginFrame().setVisible(true);
+        dispose();
     }
 
     public StandardUser getCurrentUser() { return currentUser; }
