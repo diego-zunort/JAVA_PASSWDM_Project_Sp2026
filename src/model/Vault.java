@@ -39,6 +39,7 @@ public class Vault {
 
     public void unlock(String password) {
         // TODO: verify master password then set locked = false
+        
     }
 
     public boolean isLocked() {
