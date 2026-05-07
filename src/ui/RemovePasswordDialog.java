@@ -1,20 +1,24 @@
 package ui;
 
 import database.DatabaseManager;
+import model.PasswordEntry;
 import model.StandardUser;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 public class RemovePasswordDialog extends JDialog {
 
-    private StandardUser currentUser;
-    private MainFrame parentFrame;
+    private final StandardUser currentUser;
+    private final MainFrame parentFrame;
     private final DatabaseManager db;
 
     private JComboBox<String> accountDropdown;
-    private JPasswordField currentPasswordField;
+    private JPasswordField masterPasswordField;
     private JButton removeButton;
+
+    private List<PasswordEntry> entries;
 
     public RemovePasswordDialog(MainFrame parent, StandardUser user, DatabaseManager db) {
         super(parent, "Remove Password", true);
@@ -30,27 +34,52 @@ public class RemovePasswordDialog extends JDialog {
         JPanel panel = new JPanel(new GridLayout(3, 2, 5, 5));
 
         accountDropdown = new JComboBox<>();
-        currentPasswordField = new JPasswordField();
+        masterPasswordField = new JPasswordField();
         removeButton = new JButton("Remove");
 
-        // TODO: populate accountDropdown with site names from user's vault
+        entries = currentUser.getVault().getEntries();
+        for (PasswordEntry e : entries) {
+            accountDropdown.addItem(e.getSiteName() + " - " + e.getUsername());
+        }
 
         panel.add(new JLabel("Select Account"));
         panel.add(accountDropdown);
-        panel.add(new JLabel("Current Password"));
-        panel.add(currentPasswordField);
+        panel.add(new JLabel("Master Password"));
+        panel.add(masterPasswordField);
         panel.add(new JLabel(""));
         panel.add(removeButton);
 
         add(panel, BorderLayout.CENTER);
-
         removeButton.addActionListener(e -> handleRemove());
     }
 
     private void handleRemove() {
-        String selectedAccount = (String) accountDropdown.getSelectedItem();
-        String currentPassword = new String(currentPasswordField.getPassword());
-        // TODO: verify currentPassword, remove entry from vault and DB, refresh parent table
+        int index = accountDropdown.getSelectedIndex();
+        if (index < 0 || entries.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No account selected.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String masterPassword = new String(masterPasswordField.getPassword());
+        if (masterPassword.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Master password is required.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!currentUser.verifyPassword(masterPassword)) {
+            JOptionPane.showMessageDialog(this, "Incorrect master password.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        PasswordEntry entry = entries.get(index);
+
+        if (!db.removeEntry(entry.getId())) {
+            JOptionPane.showMessageDialog(this, "Failed to remove entry.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        entries.remove(index);
+        parentFrame.refreshTable();
         dispose();
     }
 }

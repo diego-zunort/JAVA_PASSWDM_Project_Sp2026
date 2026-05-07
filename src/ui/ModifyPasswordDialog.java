@@ -1,21 +1,25 @@
 package ui;
 
 import database.DatabaseManager;
+import model.PasswordEntry;
 import model.StandardUser;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 public class ModifyPasswordDialog extends JDialog {
 
-    private StandardUser currentUser;
-    private MainFrame parentFrame;
+    private final StandardUser currentUser;
+    private final MainFrame parentFrame;
     private final DatabaseManager db;
 
     private JComboBox<String> accountDropdown;
     private JPasswordField currentPasswordField;
     private JPasswordField newPasswordField;
     private JButton modifyButton;
+
+    private List<PasswordEntry> entries;
 
     public ModifyPasswordDialog(MainFrame parent, StandardUser user, DatabaseManager db) {
         super(parent, "Modify Password", true);
@@ -35,7 +39,10 @@ public class ModifyPasswordDialog extends JDialog {
         newPasswordField = new JPasswordField();
         modifyButton = new JButton("Modify");
 
-        // TODO: populate accountDropdown with site names from user's vault
+        entries = currentUser.getVault().getEntries();
+        for (PasswordEntry e : entries) {
+            accountDropdown.addItem(e.getSiteName() + " - " + e.getUsername());
+        }
 
         panel.add(new JLabel("Select Account"));
         panel.add(accountDropdown);
@@ -47,15 +54,39 @@ public class ModifyPasswordDialog extends JDialog {
         panel.add(modifyButton);
 
         add(panel, BorderLayout.CENTER);
-
         modifyButton.addActionListener(e -> handleModify());
     }
 
     private void handleModify() {
-        String selectedAccount = (String) accountDropdown.getSelectedItem();
+        int index = accountDropdown.getSelectedIndex();
+        if (index < 0 || entries.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No account selected.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         String currentPassword = new String(currentPasswordField.getPassword());
         String newPassword = new String(newPasswordField.getPassword());
-        // TODO: verify currentPassword, encrypt newPassword, update in DB, refresh parent table
+
+        if (currentPassword.isEmpty() || newPassword.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Both password fields are required.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        PasswordEntry entry = entries.get(index);
+
+        if (!entry.getPassword().equals(currentPassword)) {
+            JOptionPane.showMessageDialog(this, "Current password is incorrect.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        entry.setPassword(newPassword);
+
+        if (!db.updateEntryPassword(entry.getId(), entry.getEncryptedPassword())) {
+            JOptionPane.showMessageDialog(this, "Failed to update password.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        parentFrame.refreshTable();
         dispose();
     }
 }

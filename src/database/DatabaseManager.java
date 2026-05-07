@@ -40,6 +40,7 @@ public class DatabaseManager {
             "  site_name          TEXT NOT NULL," +
             "  entry_username     TEXT NOT NULL," +
             "  encrypted_password TEXT NOT NULL," +
+            "  encoded_key        TEXT NOT NULL," +
             "  category           TEXT," +
             "  FOREIGN KEY(username) REFERENCES users(username)" +
             ")";
@@ -101,14 +102,15 @@ public class DatabaseManager {
         }
     }
 
-    public boolean addEntry(String username, String siteName, String entryUsername, String encryptedPassword, String category) {
-        String sql = "INSERT INTO password_entries (username, site_name, entry_username, encrypted_password, category) VALUES (?, ?, ?, ?, ?)";
+    public boolean addEntry(String username, String siteName, String entryUsername, String encryptedPassword, String encodedKey, String category) {
+        String sql = "INSERT INTO password_entries (username, site_name, entry_username, encrypted_password, encoded_key, category) VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
             pstmt.setString(2, siteName);
             pstmt.setString(3, entryUsername);
             pstmt.setString(4, encryptedPassword);
-            pstmt.setString(5, category);
+            pstmt.setString(5, encodedKey);
+            pstmt.setString(6, category);
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -138,17 +140,18 @@ public class DatabaseManager {
     }
 
     public List<PasswordEntry> getEntriesForUser(String username) throws SQLException {
-        String sql = "SELECT id, site_name, entry_username, encrypted_password, category " +
+        String sql = "SELECT id, site_name, entry_username, encrypted_password, encoded_key, category " +
                      "FROM password_entries WHERE username = ?";
         List<PasswordEntry> entries = new ArrayList<>();
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
-                PasswordEntry entry = new PasswordEntry(
+                PasswordEntry entry = PasswordEntry.fromDatabase(
                     rs.getString("site_name"),
                     rs.getString("entry_username"),
                     rs.getString("encrypted_password"),
+                    rs.getString("encoded_key"),
                     rs.getString("category")
                 );
                 entry.setId(rs.getInt("id"));
@@ -159,7 +162,7 @@ public class DatabaseManager {
     }
 
     public List<PasswordEntry> searchEntries(String username, String keyword) throws SQLException {
-        String sql = "SELECT id, site_name, entry_username, encrypted_password, category " +
+        String sql = "SELECT id, site_name, entry_username, encrypted_password, encoded_key, category " +
                      "FROM password_entries WHERE username = ? AND site_name LIKE ?";
         List<PasswordEntry> entries = new ArrayList<>();
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
@@ -167,10 +170,11 @@ public class DatabaseManager {
             pstmt.setString(2, "%" + keyword + "%");
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
-                PasswordEntry entry = new PasswordEntry(
+                PasswordEntry entry = PasswordEntry.fromDatabase(
                     rs.getString("site_name"),
                     rs.getString("entry_username"),
                     rs.getString("encrypted_password"),
+                    rs.getString("encoded_key"),
                     rs.getString("category")
                 );
                 entry.setId(rs.getInt("id"));

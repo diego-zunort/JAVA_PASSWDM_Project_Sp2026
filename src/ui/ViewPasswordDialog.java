@@ -1,20 +1,25 @@
 package ui;
 
 import database.DatabaseManager;
+import model.PasswordEntry;
 import model.StandardUser;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.util.List;
 
 public class ViewPasswordDialog extends JDialog {
 
-    private StandardUser currentUser;
-    private MainFrame parentFrame;
+    private final StandardUser currentUser;
+    private final MainFrame parentFrame;
     private final DatabaseManager db;
 
     private JComboBox<String> accountDropdown;
     private JPasswordField securityPinField;
     private JButton viewButton;
+
+    private List<PasswordEntry> entries;
 
     public ViewPasswordDialog(MainFrame parent, StandardUser user, DatabaseManager db) {
         super(parent, "View Password", true);
@@ -33,7 +38,10 @@ public class ViewPasswordDialog extends JDialog {
         securityPinField = new JPasswordField();
         viewButton = new JButton("View");
 
-        // TODO: populate accountDropdown with site names from user's vault
+        entries = currentUser.getVault().getEntries();
+        for (PasswordEntry e : entries) {
+            accountDropdown.addItem(e.getSiteName() + " - " + e.getUsername());
+        }
 
         panel.add(new JLabel("Select Account"));
         panel.add(accountDropdown);
@@ -43,13 +51,46 @@ public class ViewPasswordDialog extends JDialog {
         panel.add(viewButton);
 
         add(panel, BorderLayout.CENTER);
-
         viewButton.addActionListener(e -> handleView());
     }
 
     private void handleView() {
-        String selectedAccount = (String) accountDropdown.getSelectedItem();
-        String securityPin = new String(securityPinField.getPassword());
-        // TODO: verify securityPin, decrypt and display password in a dialog
+        int index = accountDropdown.getSelectedIndex();
+        if (index < 0 || entries.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No account selected.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String pin = new String(securityPinField.getPassword());
+        if (pin.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Security PIN is required.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!db.validateSecurityPin(currentUser.getUsername(), pin)) {
+            JOptionPane.showMessageDialog(this, "Incorrect security PIN.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        PasswordEntry entry = entries.get(index);
+        String decrypted = entry.getPassword();
+
+        JTextField passwordDisplay = new JTextField(decrypted);
+        passwordDisplay.setEditable(false);
+
+        JButton copyButton = new JButton("Copy");
+        copyButton.addActionListener(e -> {
+            Toolkit.getDefaultToolkit()
+                   .getSystemClipboard()
+                   .setContents(new StringSelection(decrypted), null);
+            JOptionPane.showMessageDialog(this, "Password copied to clipboard.");
+        });
+
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.add(new JLabel("Password for " + entry.getSiteName() + ":"), BorderLayout.NORTH);
+        panel.add(passwordDisplay, BorderLayout.CENTER);
+        panel.add(copyButton, BorderLayout.SOUTH);
+
+        JOptionPane.showMessageDialog(this, panel, "Password", JOptionPane.PLAIN_MESSAGE);
     }
 }
